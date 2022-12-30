@@ -17,6 +17,14 @@ const shastaNet = {
   url: "https://api.shasta.trongrid.io",
   defaultAddress: "41928C9AF0651632157EF27A2CF17CA72C575A4D21"
 }
+const nileNet = {
+  url: "https://api.nileex.io",
+  defaultAddress: "4171304a1706cc8013e30726c258def8ec7c1f7b34"
+}
+const privateNet = {
+  url: "https://127.0.0.1:9090",
+  defaultAddress: "4171304a1706cc8013e30726c258def8ec7c1f7b34"
+}
 
 // port
 const port = 8080;
@@ -170,10 +178,10 @@ function scheduleWeightHistory(){
       } 
     })
 
-    // Test net
+    // Test net shastaNet
     res = await httpProvider.post(shastaNet.url + "/wallet/getaccountresource", 
             JSON.stringify({'address': shastaNet.defaultAddress}));
-    console.log('schedule weight history(test net)' + new Date() + ': ' + res);
+    console.log('schedule weight history(test net ShastaNet)' + new Date() + ': ' + res);
     res = JSON.parse(res);
     sqlParam = [
       [res.TotalEnergyLimit, res.TotalEnergyWeight, new Date(), 0, 1],
@@ -184,6 +192,39 @@ function scheduleWeightHistory(){
         console.log(err);
       } 
     })
+
+    // Test net NileNet
+    res = await httpProvider.post(nileNet.url + "/wallet/getaccountresource", 
+            JSON.stringify({'address': nileNet.defaultAddress}));
+    console.log('schedule weight history(test net nileNet)' + new Date() + ': ' + res);
+    res = JSON.parse(res);
+    sqlParam = [
+      [res.TotalEnergyLimit, res.TotalEnergyWeight, new Date(), 0, 2],
+      [res.TotalNetLimit, res.TotalNetWeight, new Date(), 1, 2]
+    ];
+    pool.query(INSERT_WEIGHT_HIS, [sqlParam], (err, result) => {
+      if(err) {
+        console.log(err);
+      } 
+    })
+
+    // Test net privateNet
+    res = await httpProvider.post(privateNet.url + "/wallet/getaccountresource", 
+            JSON.stringify({'address': privateNet.defaultAddress}));
+    console.log('schedule weight history(test net privateNet)' + new Date() + ': ' + res);
+    res = JSON.parse(res);
+    sqlParam = [
+      [res.TotalEnergyLimit, res.TotalEnergyWeight, new Date(), 0, 3],
+      [res.TotalNetLimit, res.TotalNetWeight, new Date(), 1, 3]
+    ];
+    pool.query(INSERT_WEIGHT_HIS, [sqlParam], (err, result) => {
+      if(err) {
+        console.log(err);
+      } 
+    })
+
+
+
   }); 
 }
 
@@ -233,7 +274,7 @@ function scheduleVoteRewardHistory(){
       } 
     })
 
-    // Test net
+    // Test net shastaNet
     res = await httpProvider.post(shastaNet.url + "/wallet/listwitnesses");
     // console.log('schedule vote reward history(test net)' + new Date() + ': ' + res);
     res = JSON.parse(res);
@@ -270,6 +311,88 @@ function scheduleVoteRewardHistory(){
         console.log(err);
       } 
     })
+
+
+    // Test net nileNet
+    res = await httpProvider.post(nileNet.url + "/wallet/listwitnesses");
+    // console.log('schedule vote reward history(test net)' + new Date() + ': ' + res);
+    res = JSON.parse(res);
+    witnesses = res.witnesses;
+    sqlParam = [];
+    totalVotes = _.sumBy(witnesses, witness => { return witness.voteCount; })
+    srAmount = witnesses.length;
+
+    witnesses = _.sortBy(witnesses, d => { return d.voteCount * -1; });
+
+    for (let index = 0; index < witnesses.length; index++) {
+      let witness = witnesses[index];
+      let account = await httpProvider.post(nileNet.url + "/wallet/getaccount",
+                      JSON.stringify({'address': witness.address}));
+      account = JSON.parse(account);
+      let brokerage = await httpProvider.post(nileNet.url + "/wallet/getBrokerage", {'address': witness.address});
+      brokerage = JSON.parse(brokerage);
+      brokerage = brokerage.brokerage / 100;
+      let voteReward = Math.ceil(totalVoteReward * ((witness.voteCount === undefined ? 0 : witness.voteCount) / totalVotes) * brokerage);
+      let blockReward = index < 27 ? Math.ceil((totalBlockReward / srAmount) * brokerage) : 0
+      sqlParam.push([
+        account.account_name === undefined ? witness.url : util.byteToString(util.hexstring2btye(account.account_name)),
+        witness.address,
+        witness.voteCount === undefined ? 0 : witness.voteCount,
+        voteReward,
+        blockReward,
+        voteReward + blockReward,
+        new Date(),
+        '1'
+      ])
+    }
+    pool.query(INSERT_VOTE_REWARD_HIS, [sqlParam], (err, result) => {
+      if(err) {
+        console.log(err);
+      } 
+    })
+
+
+
+    
+    // Test net privateNet
+    res = await httpProvider.post(privateNet.url + "/wallet/listwitnesses");
+    // console.log('schedule vote reward history(test net)' + new Date() + ': ' + res);
+    res = JSON.parse(res);
+    witnesses = res.witnesses;
+    sqlParam = [];
+    totalVotes = _.sumBy(witnesses, witness => { return witness.voteCount; })
+    srAmount = witnesses.length;
+
+    witnesses = _.sortBy(witnesses, d => { return d.voteCount * -1; });
+
+    for (let index = 0; index < witnesses.length; index++) {
+      let witness = witnesses[index];
+      let account = await httpProvider.post(privateNet.url + "/wallet/getaccount",
+                      JSON.stringify({'address': witness.address}));
+      account = JSON.parse(account);
+      let brokerage = await httpProvider.post(privateNet.url + "/wallet/getBrokerage", {'address': witness.address});
+      brokerage = JSON.parse(brokerage);
+      brokerage = brokerage.brokerage / 100;
+      let voteReward = Math.ceil(totalVoteReward * ((witness.voteCount === undefined ? 0 : witness.voteCount) / totalVotes) * brokerage);
+      let blockReward = index < 27 ? Math.ceil((totalBlockReward / srAmount) * brokerage) : 0
+      sqlParam.push([
+        account.account_name === undefined ? witness.url : util.byteToString(util.hexstring2btye(account.account_name)),
+        witness.address,
+        witness.voteCount === undefined ? 0 : witness.voteCount,
+        voteReward,
+        blockReward,
+        voteReward + blockReward,
+        new Date(),
+        '1'
+      ])
+    }
+    pool.query(INSERT_VOTE_REWARD_HIS, [sqlParam], (err, result) => {
+      if(err) {
+        console.log(err);
+      } 
+    })
+
+
   }); 
 }
 

@@ -23,13 +23,20 @@ class TopBar extends React.Component {
 
   handleChangeNet(item) {
     let val = item.key;
-    if ((this.state.currentNet === 'Main Net' && val === 'MainNet') || (this.state.currentNet === 'Test Net' && val === 'ShastaNet')) {
+    if ((this.state.currentNet === 'Main Net' && val === 'MainNet') 
+      || (this.state.currentNet === 'Test Net ShastaNet' && val === 'ShastaNet')
+      || (this.state.currentNet === 'Test Net NileNet' && val === 'NileNet')
+      || (this.state.currentNet === 'Test Net PrivateNet' && val === 'PrivateNet')) {
        return;
     }
     if (val === 'MainNet') {
       this.setState({currentNet: 'Main Net'});
-    } else {
-      this.setState({currentNet: 'Test Net'});
+    } else if (val === 'ShastaNet') {
+      this.setState({currentNet: 'Test Net ShastaNet'});
+    } else if (val === 'NileNet') {
+      this.setState({currentNet: 'Test Net NileNet'});
+    } else if (val === 'PrivateNet') {
+      this.setState({currentNet: 'Test Net PrivateNet'});
     }
     this.setState({
       net: val
@@ -74,7 +81,13 @@ class TopBar extends React.Component {
           <a className="menuSelect" href onClick={(e) => {e.preventDefault();}}>Main Net</a>
         </Menu.Item>
         <Menu.Item key="ShastaNet" onClick={thiz => this.handleChangeNet(thiz)}>
-          <a className="menuSelect" href onClick={(e) => {e.preventDefault();}}>Test Net</a>
+          <a className="menuSelect" href onClick={(e) => {e.preventDefault();}}>Test Net ShastaNet</a>
+        </Menu.Item>
+        <Menu.Item key="NileNet" onClick={thiz => this.handleChangeNet(thiz)}>
+          <a className="menuSelect" href onClick={(e) => {e.preventDefault();}}>Test Net NileNet</a>
+        </Menu.Item>
+        <Menu.Item key="PrivateNet" onClick={thiz => this.handleChangeNet(thiz)}>
+          <a className="menuSelect" href onClick={(e) => {e.preventDefault();}}>Test Net PrivateNet</a>
         </Menu.Item>
       </Menu>
     )
